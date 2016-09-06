@@ -50,5 +50,6 @@ write     { printf("%d: %s -> WRITE\n", yylineno, yytext); }
 int main()
 {
     yylex();
+    return 0;
 }
 
