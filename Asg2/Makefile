@@ -22,7 +22,7 @@ $(EXEC): $(FLEX) $(BISON)
 	@echo "Scanner done"
 
 clean:
-	rm -f $(BISON) $(FLEX) $(EXEC) $(BISON:.y=.h) $(BISON:.y=.output)
+	rm -f $(BISON) $(FLEX) $(EXEC) $(BISON:.c=.h) $(BISON:.c=.output)
 
 run: $(EXEC)
 	./$(EXEC)
