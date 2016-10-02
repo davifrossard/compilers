@@ -28,8 +28,8 @@ run: $(EXEC)
 	./$(EXEC)
 
 test: $(EXEC)
-	for i in in/*.$(intype); do \
+	for i in in/*; do \
 		echo $$i; \
-		./$(EXEC) < $$i | diff out/$$(basename $$i .$(intype)).out -; \
+		./$(EXEC) < $$i | diff out/$$(basename $$i .cm).out -; \
 	done
 
