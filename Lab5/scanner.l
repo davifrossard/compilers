@@ -13,7 +13,7 @@ string \"[^"]*\"
 ignore "//".*|[ \t]*|"{"[^}]*"}"
 varname [a-zA-Z][a-zA-Z0-9]*
 %%
-{ignore}  { return IGNORE; }
+{ignore}  { }
 if        { return IF; }
 then      { return THEN; }
 else      { return ELSE; }
@@ -26,10 +26,18 @@ write     { return WRITE; }
 "-"       { return MINUS; }
 "*"       { return TIMES; }
 "/"       { return DIVISION; }
+":="      { return ASSIGN; }
+"="       { return EQ; }
+">"       { return GT; }
+"<"       { return LT; }
+">="      { return GE; }
+"<="      { return LE; }
 ";"       { return END; }
+"("       { return LPAREN; }
+")"       { return RPAREN; }
 {number}  { return NUMBER; }
 {varname} { return ID; }
-<<EOF>>   { return ENDOF; }
+<<EOF>>   { return ENDFILE; }
+"\n"	  { return NEWLINE; }
 .         { return UNKNOWN; }
-"\n"	  { }
 %%

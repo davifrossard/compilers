@@ -15,12 +15,20 @@ typedef enum {
     MINUS,
     TIMES,
     DIVISION,
+    ASSIGN,
+    EQ,
+    GT,
+    LT,
+    GE,
+    LE,
     NUMBER,
     ID,
     ENTER,
     UNKNOWN,
-    ENDOF,
-	IGNORE
+    ENDFILE,
+	LPAREN,
+	RPAREN,
+	NEWLINE
 } TokenType;
 
 
