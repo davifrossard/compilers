@@ -9,7 +9,7 @@ flex: scanner.l
 	flex scanner.l
 
 gcc: scanner.c parser.c
-	gcc -Wall -o tiny scanner.c parser.c tables.c
+	gcc -Wall -o tiny scanner.c parser.c tables.c --std=c99
 
 run: all
 	./tiny

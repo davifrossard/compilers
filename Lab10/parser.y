@@ -86,12 +86,18 @@ type_names get_sum_result(type_names x, type_names y)
         return T_STRING;
 }
 
-type_names get_fact_result(type_names x, type_names y)
+type_names get_fact_result(type_names x, type_names y, int lineno)
 {
     if(x == T_INT && y == T_INT)
-        return T_INT
-    else((x == T_INT || y))
-
+        return T_INT;
+    else if ((x == T_INT || x == T_REAL) && (y == T_REAL || y == T_INT))
+				return T_REAL;
+		else
+		{
+				printf("SEMANTIC ERROR (%d): Invalid return type.\n",
+								lineno);
+				exit(0);
+		}
 }
 
 type_names _LAST_TYPE_READ;
@@ -127,11 +133,11 @@ expr: NUMBER	{ $$ = T_INT; }
 | FALSE	{ $$ = T_BOOL; }
 | STRING	{ $$ = T_STRING; }
 | expr PLUS expr	{ $$ = get_sum_result($1, $3); }
-| expr MINUS expr
-| expr TIMES expr
-| expr OVER expr
-| expr EQ expr
-| expr LESSTHAN expr
+| expr MINUS expr { $$ = get_fact_result($1, $3, yylineno); }
+| expr TIMES expr { $$ = get_fact_result($1, $3, yylineno); }
+| expr OVER expr  { $$ = get_fact_result($1, $3, yylineno); }
+| expr EQ expr   { get_fact_result($1, $3, yylineno); $$ = T_BOOL; }
+| expr LESSTHAN expr  { get_fact_result($1, $3, yylineno); $$ = T_BOOL; }
 | LPAREN expr RPAREN    { $$ = $1; }
 | ID	{ get_var($1, yylineno); $$ = get_var_type($1, yylineno); }
 ;
@@ -145,14 +151,14 @@ stmt: assign_stmt
 | print_stmt
 ;
 
-assign_stmt: ID ASSIGN expr SCOLON { get_var($1, yylineno); }
+assign_stmt: ID ASSIGN expr SCOLON { get_var($1, yylineno); if(get_var_type($1, yylineno) != $3) { 	printf("SEMANTIC ERROR (%d): Invalid return type.\n", yylineno); exit(0);} }
 ;
 
 print_stmt: PRINT ID SCOLON { get_var($2, yylineno); printf("PRINT: %s.\n", $2); }
 ;
 
-ids: ID COMMA ids  { safe_add_var($1, _LAST_TYPE_READ, yylineno); printf("%d\n", _LAST_TYPE_READ); }
-| ID { safe_add_var($1, _LAST_TYPE_READ, yylineno); printf("%d\n", _LAST_TYPE_READ); }
+ids: ID COMMA ids  { safe_add_var($1, _LAST_TYPE_READ, yylineno); }
+| ID { safe_add_var($1, _LAST_TYPE_READ, yylineno); }
 ;
 
 decl_var: INT { _LAST_TYPE_READ = T_INT; } ids SCOLON
