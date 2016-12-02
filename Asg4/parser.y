@@ -15,6 +15,8 @@
 #define NN1(type) create_node(type)
 #define NN2(type,data) create_node_d(data,type)
 
+#define IV(x,y) is_vector(syms_table,x,y)
+
 extern int yylineno;
 extern char* yytext;
 int yylex(void);
@@ -63,14 +65,14 @@ int check_call(char* funname, int lineno, int arity)
 	return key;
 }
 
-int safe_add_var(char* varname, int lineno, int scope)
+int safe_add_var(char* varname, int lineno, int scope, NodeKind kind, int is_vector)
 {
 	int key = lookup_var(syms_table, varname, scope);
   if(key == -1) {
-    return add_var(syms_table, varname, lineno, scope);
+    return add_var(syms_table, varname, lineno, scope, kind, is_vector);
   } if(key == -2) {
     add_new_list(syms_table, scope);
-		return add_var(syms_table, varname, lineno, scope);
+		return add_var(syms_table, varname, lineno, scope, kind, is_vector);
   } else {
 		printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n",
 					 lineno, varname, get_var_line(syms_table, key, scope));
@@ -87,6 +89,11 @@ int check_var(char* varname, int lineno, int scope)
 		exit(0);
 	}
 	return key;
+}
+
+NodeKind check_var_type(int scope, int key)
+{
+	return lookup_var_type(syms_table, scope, key);
 }
 
 %}
@@ -109,7 +116,7 @@ func_decl_list: func_decl { add_children(tree, 1, $1); }
 func_decl: func_header func_body { $$ = NN(FUNCTION_NODE, current_scope); add_children($$, 2, $1, $2); }
 ;
 
-func_header: ret_type ID LPAREN { param_count = 0; current_scope = safe_add_fun($2, yylineno, param_count); } params RPAREN { $$ = NN(FHEADER_NODE); add_children($$, 3, NN(ID_NODE, current_scope), $1, $5); }
+func_header: ret_type ID LPAREN { param_count = 0; current_scope = safe_add_fun($2, yylineno, param_count); } params RPAREN { $$ = NN(FHEADER_NODE); add_children($$, 3, NN(ID_NODE, current_scope), $1, $5); set_fun_arity(funs_table, current_scope, param_count); }
 ;
 
 func_body: LBRACE opt_var_decl opt_stmt_list RBRACE {$$ = NN(FBODY_NODE); add_children($$, 2, $2, $3); }
@@ -133,8 +140,8 @@ param_list: param	{ add_children(_LAST_PARENT, 1, $1); param_count++; }
 | param_list COMMA param  { add_children(_LAST_PARENT, 1, $3); param_count++; }
 ;
 
-param: INT ID	 { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope));  }
-| INT ID LBRACK RBRACK { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope));  }
+param: INT ID	 { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope, ID_NODE, 0));  }
+| INT ID LBRACK RBRACK { $$ = NN(VID_NODE, safe_add_var($2, yylineno, current_scope, VID_NODE, 1));  }
 ;
 
 opt_var_decl: %empty { $$ = NN(VAR_DECL_NODE); }
@@ -151,8 +158,8 @@ var_decl_list: var_decl { add_children(_LAST_PARENT, 1, $1); }
 | var_decl_list var_decl { add_children(_LAST_PARENT, 1, $2); }
 ;
 
-var_decl: INT ID SEMI   { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope)); }
-| INT ID LBRACK NUM RBRACK SEMI   { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope)); add_children($$, 1, NN(NUM_NODE, atoi($4))); }
+var_decl: INT ID SEMI   { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope, ID_NODE, 0)); }
+| INT ID LBRACK NUM RBRACK SEMI   { $$ = NN(ID_NODE, safe_add_var($2, yylineno, current_scope, ID_NODE, 1)); add_children($$, 1, NN(NUM_NODE, atoi($4))); }
 ;
 
 opt_stmt_list: %empty { $$ = NN(STMT_SEQ_NODE); }
@@ -179,9 +186,9 @@ stmt: assign_stmt   { $$ = $1; }
 assign_stmt: lval ASSIGN arith_expr SEMI  { $$ = NN(ASSIGN_NODE); add_children($$, 2, $1, $3); }
 ;
 
-lval: ID	{ $$ = NN(ID_NODE, check_var($1, yylineno, current_scope));  }
-| ID LBRACK NUM RBRACK { $$ = NN(ID_NODE, check_var($1, yylineno, current_scope)); }
-| ID LBRACK ID RBRACK { $$ = NN(ID_NODE, check_var($1, yylineno, current_scope)); }
+lval: ID	{ int key = check_var($1, yylineno, current_scope); $$ = NN(check_var_type(current_scope, key), key);  }
+| ID LBRACK NUM RBRACK { int key = check_var($1, yylineno, current_scope);  $$ = NN(check_var_type(current_scope, key), key); add_children($$, 1, NN(NUM_NODE,$3)); }
+| ID LBRACK ID RBRACK { int key = check_var($1, yylineno, current_scope);  $$ = NN(check_var_type(current_scope, key), key); add_children($$, 1, NN(ID_NODE, check_var($3, yylineno, current_scope))); }
 ;
 
 if_stmt: IF LPAREN bool_expr RPAREN block  { $$ = NN(IF_NODE); add_children($$, 2, $3, $5); }
@@ -221,7 +228,7 @@ output_call: OUTPUT LPAREN arith_expr RPAREN   { $$ = NN(OUTPUT_NODE); add_child
 write_call: WRITE LPAREN STRING RPAREN   { $$ = NN(WRITE_NODE, add_literal(lits_table, $3)); }
 ;
 
-user_func_call: ID LPAREN {param_count = 0;} opt_arg_list RPAREN { $$ = NN(FUNCTION_NODE, check_call($1, yylineno, param_count)); add_children($$, 1, $4); }
+user_func_call: ID LPAREN {param_count = 0;} opt_arg_list RPAREN { $$ = NN(FUNCTION_CALL_NODE, check_call($1, yylineno, param_count)); add_children($$, 1, $4); }
 ;
 
 opt_arg_list: %empty { $$ = NN(ARG_LIST_NODE); }
@@ -234,8 +241,8 @@ opt_arg_list: %empty { $$ = NN(ARG_LIST_NODE); }
 	}
 ;
 
-arg_list: arith_expr { add_children(_LAST_PARENT, 1, $1); param_count++; }
-| arg_list COMMA arith_expr   { add_children(_LAST_PARENT, 1, $3); param_count++; }
+arg_list: arith_expr { add_children(_LAST_PARENT, 1, adjust_type($1, IV(current_scope, $1))); param_count++; }
+| arg_list COMMA arith_expr   { add_children(_LAST_PARENT, 1, adjust_type($3, IV(current_scope, $3))); param_count++; }
 ;
 
 bool_expr: arith_expr bool_op arith_expr { $$ = NN(BOOL_EXPR_NODE); add_children($$, 3, $1, $2, $3); }
@@ -273,7 +280,7 @@ int main() {
 	stdin = fopen(ctermid(NULL), "r");
 	run_ast(tree, syms_table, lits_table, funs_table);
 
-	print_lit_table(lits_table);
+	/*print_lit_table(lits_table);
 	printf("\n\n");
 	free_lit_table(lits_table);
 
@@ -286,6 +293,6 @@ int main() {
 	free_fun_table(funs_table);
 
 	freopen ("out.dot","w+",stdout);
-	print_dot(tree);
+	print_dot(tree);*/
   return 0;
 }

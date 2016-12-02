@@ -8,6 +8,7 @@ typedef struct node BT;
 
 typedef enum {
   FUNC_LIST_NODE,
+  FUNCTION_CALL_NODE,
   STMT_SEQ_NODE,
   IF_NODE,
   BLOCK_NODE,
@@ -27,6 +28,7 @@ typedef enum {
   EQ_NODE,
   NEQ_NODE,
   NUM_NODE,
+  VID_NODE,
   ID_NODE,
   RET_NODE,
   BOOL_EXPR_NODE,
@@ -50,6 +52,7 @@ void free_tree(BT *tree);
 NodeKind get_kind(BT *node);
 int get_child_count(BT *node);
 BT* get_child(BT *node, int i);
+BT* adjust_type(BT *node, NodeKind kind);
 int get_data(BT *node);
 
 void print_dot(BT *tree);

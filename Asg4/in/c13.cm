@@ -5,7 +5,7 @@
 int minloc(int a[], int low, int high) {
     int i;
     int x;
-    int k[3];
+    int k;
 
     k = low;
     x = a[low];

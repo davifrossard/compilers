@@ -8,6 +8,7 @@ struct node {
     int data;
     int num_child;
     int max_child;
+    int vector;
     NodeKind kind;
     struct node **sons;
 };
@@ -17,6 +18,7 @@ BT* create_node(NodeKind kind) {
     node->num_child = 0;
     node->max_child = 0;
     node->data = -1;
+    node->vector = 0;
     node->sons = NULL;
     node->kind = kind;
     return node;
@@ -27,9 +29,15 @@ BT* create_node_d(int data, NodeKind kind) {
     node->num_child = 0;
     node->max_child = 0;
     node->data = data;
+    node->vector = 0;
     node->sons = NULL;
     node->kind = kind;
     return node;
+}
+
+BT* adjust_type(BT* node, NodeKind kind) {
+  node->kind = kind;
+  return node;
 }
 
 BT* add_children(BT* father, int num, ... )
@@ -49,8 +57,8 @@ BT* add_children(BT* father, int num, ... )
       father->sons[i] = va_arg(children, BT*);
       father->num_child++;
     }
-    return father;
     va_end(children);
+    return father;
 }
 
 NodeKind get_kind(BT *node)
@@ -109,6 +117,7 @@ int nr;
 char* kind2str(NodeKind kind) {
     switch(kind) {
       case FUNC_LIST_NODE: return "FUNC_LIST_NODE";
+      case FUNCTION_CALL_NODE: return "FUNCTION_CALL_NODE";
       case STMT_SEQ_NODE: return "STMT_SEQ_NODE";
       case IF_NODE: return "IF_NODE";
       case BLOCK_NODE: return "BLOCK_NODE";
@@ -129,6 +138,7 @@ char* kind2str(NodeKind kind) {
       case NEQ_NODE: return "NEQ_NODE";
       case NUM_NODE: return "NUM_NODE";
       case ID_NODE: return "ID_NODE";
+      case VID_NODE: return "VID_NODE";
       case RET_NODE: return "RET_NODE";
       case BOOL_EXPR_NODE: return "BOOL_EXPR_NODE";
       case FUNCTION_NODE: return "FUNCTION_NODE";
@@ -139,7 +149,7 @@ char* kind2str(NodeKind kind) {
       case RET_INT_NODE: return "RET_INT_NODE";
       case RET_VOID_NODE: return "RET_VOID_NODE";
       case VAR_DECL_NODE: return "VAR_DECL_NODE";
-      default: return "ERROR!!";
+      default: return "ENUM NOT FOUND";
     }
 }
 

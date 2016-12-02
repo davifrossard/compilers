@@ -77,6 +77,8 @@ typedef struct {
   char *name;
   int line;
   int offset;
+  NodeKind kind;
+  int is_vector;
 } Entry;
 
 struct sym_table {
@@ -105,6 +107,34 @@ int lookup_var(SymTable* st, char* s, int scope) {
   return -1;
 }
 
+NodeKind lookup_var_type(SymTable* st, int scope, int key)
+{
+  SymTable* aux;
+  for(aux = st; aux != NULL && aux->scope != scope; aux = aux->next);
+  if(aux == NULL) {
+    return -2;
+  }
+  return aux->t[key]->kind;
+}
+
+NodeKind is_vector(SymTable* st, int scope, BT* node)
+{
+  if(get_kind(node) == ID_NODE) {
+    SymTable* aux;
+    for(aux = st; aux != NULL && aux->scope != scope; aux = aux->next);
+    if(aux == NULL) {
+      return -2;
+    }
+    int key = get_data(node);
+    if(aux->t[key]->is_vector)
+      return VID_NODE;
+    else
+      return ID_NODE;
+  } else {
+    return get_kind(node);
+  }
+}
+
 SymTable* get_sym_list_by_scope(SymTable* st, int scope) {
   SymTable* aux;
   for(aux = st; aux != NULL && aux->scope != scope; aux = aux->next);
@@ -131,13 +161,15 @@ SymTable* add_new_list(SymTable* root, int scope)
   return root;
 }
 
-int add_var(SymTable* st, char* s, int line, int scope) {
+int add_var(SymTable* st, char* s, int line, int scope, NodeKind kind, int is_vector) {
   int sym_len = strlen(s);
   char* value = malloc(sizeof(char) * (sym_len+1));
   strcpy(value, s);
   Entry* e = malloc(sizeof(Entry));
   e->name = value;
   e->line = line;
+  e->kind = kind;
+  e->is_vector = is_vector;
 
   uint key = hash_fun(s, sym_len, SYMBOLS_HASH_SIZE);
   SymTable* aux;
@@ -182,8 +214,8 @@ void print_sym_table(SymTable* st) {
     for(int i = 0; i < SYMBOLS_HASH_SIZE; i++) {
       if(aux->t[i] != 0)
       {
-        printf("Entry %d -- name: %s, line: %d, scope: %d, offset: %d\n",
-               i, get_var_name(st, i, scope), get_var_line(st, i, scope), scope, get_var_offset(aux, i));
+        printf("Entry %d -- name: %s, line: %d, scope: %d, offset: %d, vector: %d\n",
+               i, get_var_name(st, i, scope), get_var_line(st, i, scope), scope, get_var_offset(aux, i), aux->t[i]->is_vector);
       }
     }
   }
@@ -274,6 +306,10 @@ int get_fun_line(FunTable* ft, int i) {
 
 int get_fun_arity(FunTable* ft, int i) {
   return ft->t[i]->arity;
+}
+
+void set_fun_arity(FunTable* ft, int i, int arity) {
+  ft->t[i]->arity = arity;
 }
 
 void print_fun_table(FunTable* ft) {

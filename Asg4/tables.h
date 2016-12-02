@@ -44,13 +44,19 @@ SymTable* add_new_list(SymTable* root, int scope);
 // Adds a fresh var to the table.
 // No check is made by this function, so make sure to call 'lookup_var' first.
 // Returns the index where the variable was inserted.
-int add_var(SymTable* st, char* s, int line, int scope);
+int add_var(SymTable* st, char* s, int line, int scope, NodeKind kind, int is_vector);
 
 // Returns the symbols table for the specific scope
 SymTable* get_sym_list_by_scope(SymTable* st, int scope);
 
 // Returns the index where the given variable is stored or -1 otherwise.
 int lookup_var(SymTable* st, char* s, int scope);
+
+// Returns the variable type
+NodeKind lookup_var_type(SymTable* st, int scope, int key);
+
+// Returns whether or not the varible is a vector 
+NodeKind is_vector(SymTable* st, int scope, BT* node);
 
 // Returns the variable name stored at the given index.
 // No check is made by this function, so make sure that the index is valid first.
@@ -113,6 +119,9 @@ BT* get_fun_node(FunTable* ft, int i);
 // Returns the arity of the function stored at the given index.
 // No check is made by this function, so make sure that the index is valid first.
 int get_fun_arity(FunTable* ft, int i);
+
+// Sets the function arity
+void set_fun_arity(FunTable* ft, int i, int arity);
 
 // Prints the given table to stdout.
 void print_fun_table(FunTable* st);
